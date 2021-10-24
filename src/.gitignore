@@ -1,0 +1,5 @@
+*.pyc
+env
+ImageNet64
+coco
+notebooks/.ipynb_checkpoints

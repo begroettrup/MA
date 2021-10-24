@@ -1,0 +1,3 @@
+[submodule "3rdparty/invertible-resnet"]
+	path = 3rdparty/invertible-resnet
+	url = https://github.com/jhjacobsen/invertible-resnet.git
