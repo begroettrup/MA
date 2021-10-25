@@ -35,7 +35,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 parser = argparse.ArgumentParser(description="Evaluate entropy estimation methods "
   "on generated data.")
 
-parser.add_argument('--reproducibles_base_dir', default="../reproducibles/",
+parser.add_argument('--reproducibles_base_dir',
   help='Base directory to save results under.')
 parser.add_argument('--img_width', default=64,
   help='Width of generated images.')
@@ -285,6 +285,9 @@ def entropy_evaluation(dataset, name, entropy, rundir):
           results_test)
 
   print()
+
+if not args.reproducibles_base_dir:
+  args.reproducibles_base_dir = Reproducible.get_base_directory()
 
 # stochstical things that should be repeated over multiple runs
 for reproducible_subdir in ["run1", "run2", "run3"]:

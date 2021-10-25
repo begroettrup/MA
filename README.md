@@ -32,3 +32,9 @@ Also make sure that the repository was cloned recursively or run
 git submodule update --init --recursive
 ```
 to receive the [original iResNet implementation](https://github.com/jhjacobsen/invertible-resnet).
+
+Computational artifacts will automatically be saved to make reruns faster. By default these will be saved in `~/.reproducibles`. This can be configured by creating a file named `.reproducibles.yml` in the user's home directory with the content:
+```yaml
+base_dir: /path/to/reproducibles_dir
+```
+where `/path/to/reproducibles_dir` is the path to the directory in which files should be saved.

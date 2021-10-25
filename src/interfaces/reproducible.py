@@ -110,6 +110,13 @@ class Reproducible(Parametrizable):
     for r in Reproducible.__references:
       r._delete_cache()
 
+  @staticmethod
+  def get_base_directory():
+    """
+    Returns the path to the current global base directory for Reproducibles.
+    """
+    return Reproducible.__base_directory
+
   def _delete_cache(self):
     """
     Delete all cached values that depend on the parameters of the object.
