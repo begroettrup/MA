@@ -49,6 +49,12 @@ parser.add_argument('--reproducibles_dir', type=str, help='Base directory to sav
 parser.add_argument('--save_reconstructions',
   help='Save reconstructions in the given directory.')
 
+parser.add_argument('--skip_entropy', action='store_true',
+  help="""
+  Set to not validate backtransformations. Intended for receiving samples without
+  performing expensive computations.
+  """)
+
 parser.add_argument('--data',
   choices=['base', 'resnet', 'mobilenet', 'densenet'],
   nargs='+',
@@ -92,7 +98,8 @@ metric_choices_tt = {
 }
 
 parser.add_argument('--backtransformation', default='ResUpNeXt.L2Sqrt',
-  choices=['ResUpNeXt.L2Sqrt', 'ResUpNeXt.L2', 'ResUpNeXt.TTL1', 'GradDesc'])
+  choices=['ResUpNeXt.L2Sqrt', 'ResUpNeXt.L2', 'ResUpNeXt.TTL1', 'GradDesc',
+           'GradDesc.ResUpNeXt'])
 
 parser.add_argument('--val_metrics', nargs="+",
   choices=list(metric_choices_back.keys()) + list(metric_choices_tt.keys()),
@@ -102,9 +109,7 @@ parser.add_argument('--val_metrics', nargs="+",
 
 parser.add_argument('--val_ratio', default=.1,
   help="Ratio of base data used for validation.")
-parser.add_argument('--skip_entropy_estimation', action='store_true',
-  help="Don't estimate entropy on the backtransformed data. "
-       "Useful for testing backtransformation methods without entropy estimation.")
+
 parser.add_argument('--make_final_results', action='store_true',
   help="Whether to use the test set to create final results.")
 
@@ -172,7 +177,7 @@ def print_entropy_estimates(data_name, data_train, data_val, data_test):
   if args.make_final_results:
     print("Backtransformation IResNet entropy estimate on test:", results_test)
 
-def validate_backtransformation(data_val, forward_transform, back_transform):
+def validate_backtransformation(data_val, forward_transform, back_transform, set_name):
   val_data = make_transformed_data(normalize_imgs(data_val), forward_transform)
   val_data_forward_labels = SelfLabeledData()
   val_data_forward_labels.set_parameter("base_data", val_data)
@@ -243,7 +248,7 @@ def validate_backtransformation(data_val, forward_transform, back_transform):
     append_results(validation_results_tt, normalization_divisors_tt)
   
   for name in args.val_metrics:
-    print("Back val " + name + " loss:", numeric_results[name])
+    print(set_name + " " + name + " loss:", numeric_results[name])
     print(" -- normalized:", numeric_results[name] / norm_divisors[name])
 
 def estimate_entropy(model, model_name,
@@ -295,6 +300,12 @@ def make_backtransformation(data_train, data_val, layer_transform):
     )[0]
   elif args.backtransformation == 'GradDesc':
     return make_gradient_descent(layer_transform)
+  elif args.backtransformation == 'GradDesc.ResUpNeXt':
+    return make_gradient_descent(layer_transform,
+      suggester=make_reproduction_resupnext(
+        data_train, data_val, layer_transform,
+        train_epochs=args.back_train_epochs)[0]
+      )
 
 def explore_layers_of(model, model_name,
   data_train_1, data_val_1, data_train_2, data_val_2,
@@ -328,12 +339,6 @@ def explore_layers_of(model, model_name,
     reproduction_model = make_backtransformation(
       data_train_1, data_val_1, layer_transform)
 
-    if args.val_metrics:
-      validate_backtransformation(data_val_1, layer_transform, reproduction_model)
-
-      if args.make_final_results:
-        validate_backtransformation(data_test, layer_transform, reproduction_model)
-
     if args.save_reconstructions:
       def save_imgs(sample_data, start_string=""):
         save_grid(
@@ -348,7 +353,13 @@ def explore_layers_of(model, model_name,
       if args.make_final_results:
        save_imgs(samples_test, "test_")
 
-    if not args.skip_entropy_estimation:
+    if args.val_metrics:
+      validate_backtransformation(data_val_1, layer_transform, reproduction_model, "Back val")
+
+      if args.make_final_results:
+        validate_backtransformation(data_test, layer_transform, reproduction_model, "Back test")
+
+    if not args.skip_entropy:
       estimate_entropy(model, model_name,
                        layer_transform, layer_str,
                        reproduction_model,

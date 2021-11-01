@@ -167,14 +167,19 @@ def model_back_dens_split(data, val_ratio):
     imgs_dens_train, imgs_dens_val
   )
 
-def make_gradient_descent(forward_transformation, img_dims=(3,64,64)):
+def make_gradient_descent(forward_transformation, img_dims=(3,64,64),
+  suggester=None):
   """
   Args:
     img_dims: (height, width) of images that should be produced
+    suggester: Image suggestion model for initialization of gradient descent.
   """
+  if suggester is None:
+    suggester = ZeroSuggestionModel(img_dims)
+
   grad_desc_inverse = GradientDescentInverter(
     forward_transformation,
-    ZeroSuggestionModel(img_dims),
+    suggester,
     use_cuda=True)
 
   # Sigmoid activation to be within value range of normalized image
