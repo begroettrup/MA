@@ -5,7 +5,7 @@ from interfaces.torch_hub_model import TorchHubModel
 from interfaces.layer_hook import LayerHook
 from interfaces.image_io import save_grid
 from interfaces.reproducible import Reproducible, ReproducibleFunction
-from interfaces.test_results import ReproducibleModelTest
+from interfaces.test_results import ReproducibleModelTest, TestResults
 from interfaces.transformations import ConcatOnSubset, Multiply, TransformChain
 from interfaces.normalization import FixedValueModel
 
@@ -360,6 +360,16 @@ def make_layers(default_layers):
   else:
     return default_layers
 
+def test_model(name, model):
+  if args.make_final_results:
+    model_test_results = TestResults()
+    model_test_results.set_parameter("model", model)
+    model_test_results.set_parameter("testset", normalize_imgs(imgs_test))
+    model_test_results.set_parameter("metrics", ["Loss", "Accuracy"])
+
+    print(name + " test loss:", model_test_results.reproduction()[0])
+    print(name + " test accuracy:", model_test_results.reproduction()[1])
+
 if 'base' in args.data:
   print_entropy_estimates("original data",
     dediscaugment(imgs_dens_train),
@@ -379,6 +389,7 @@ if 'resnet' in args.data:
   model, model_test_results = tutls.train_and_validate(
     model, dediscnorm_imgs(imgs_model_val), add_metrics=["Accuracy"])
   print()
+  test_model("ResNet", model)
 
   explore_layers_of(model, "ResNet",
     imgs_back_train, imgs_back_val, imgs_dens_train, imgs_dens_val,
@@ -406,6 +417,7 @@ if 'mobilenet' in args.data:
   model, model_test_results = tutls.train_and_validate(
     model, dediscnorm_imgs(imgs_model_val), add_metrics=["Accuracy"])
   print()
+  test_model("MobileNet", model)
 
   explore_layers_of(model, "MobileNet",
     imgs_back_train, imgs_back_val, imgs_dens_train, imgs_dens_val,
@@ -435,6 +447,7 @@ if 'densenet' in args.data:
   model, model_test_results = tutls.train_and_validate(
     model, dediscnorm_imgs(imgs_model_val), add_metrics=["Accuracy"])
   print()
+  test_model("DenseNet", model)
 
   explore_layers_of(model, "DenseNet",
     imgs_back_train, imgs_back_val, imgs_dens_train, imgs_dens_val,
