@@ -219,7 +219,7 @@ def entropy_evaluation(dataset, name, entropy, rundir):
   # now set iresnet to the one to be inspected
   ires_net = make_ires_net_local(imgs_model_train, imgs_model_val)
 
-  for layer in "3", "5":
+  for layer in "1", "3", "5":
     print("---Layer", layer + "---")
     layer_transform = LayerHook(ires_net, ["stack", layer])
 
